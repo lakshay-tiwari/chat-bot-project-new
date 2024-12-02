@@ -3,11 +3,29 @@ import { useRecoilState } from 'recoil';
 import { chatHistoryState } from '../store/chatState';
 import { getChatResponse } from '../api/chatApi';
 import { FaPaperPlane, FaRobot, FaUser } from 'react-icons/fa';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; // For GitHub-flavored markdown
 
 const ChatBox = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useRecoilState(chatHistoryState);
+
+  // Function to render markdown safely and properly
+  const renderMarkdown = (message) => {
+    return (
+      <ReactMarkdown
+        children={message}
+        remarkPlugins={[remarkGfm]} // Enable GitHub-flavored markdown
+        components={{
+          p: ({ node, ...props }) => <p className="mb-3 text-gray-800" {...props} />,
+          strong: ({ node, ...props }) => <strong className="font-bold text-red-500" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3" {...props} />,
+          li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+        }}
+      />
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,10 +34,10 @@ const ChatBox = () => {
     const userMessage = {
       type: 'user',
       message: input,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
     };
 
-    setChatHistory(prev => [...prev, userMessage]);
+    setChatHistory((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
@@ -28,9 +46,9 @@ const ChatBox = () => {
       const botMessage = {
         type: 'bot',
         message: response.answer,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       };
-      setChatHistory(prev => [...prev, botMessage]);
+      setChatHistory((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Error getting response:', error);
     } finally {
@@ -43,7 +61,7 @@ const ChatBox = () => {
       <div className="bg-blue-600 text-white p-4 rounded-t-lg">
         <h2 className="text-xl font-bold">Health Assistant</h2>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {chatHistory.map((chat, index) => (
           <div
@@ -64,7 +82,7 @@ const ChatBox = () => {
                   : 'bg-gray-100 text-gray-800 rounded-bl-none'
               }`}
             >
-              <p>{chat.message}</p>
+              <div>{chat.type === 'bot' ? renderMarkdown(chat.message) : chat.message}</div>
               <span className="text-xs opacity-70 mt-1 block">
                 {chat.timestamp}
               </span>
